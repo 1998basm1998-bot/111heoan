@@ -11,11 +11,11 @@
 
     <div class="app-container">
         <header class="app-header">
-            <div class="profile-info">
+            <div class="profile-info" onclick="openProfileModal()">
                 <img src="https://ui-avatars.com/api/?name=Abu+Amir&background=random" alt="User" class="avatar">
                 <div>
                     <h3>مرحباً، أبو أمير</h3>
-                    <span class="badge">مستثمر ذهبي</span>
+                    <span class="badge">انقر لعرض البروفايل</span>
                 </div>
             </div>
             <div class="wallet-card">
@@ -32,7 +32,7 @@
             
             <section id="my-farm-section">
                 <div class="section-title">
-                    <h2><i class="fas fa-tractor"></i> حيواناتي النشطة</h2>
+                    <h2><i class="fas fa-wallet"></i> المحفظة (استثماراتي)</h2>
                     <span id="active-count">0 حيوان</span>
                 </div>
                 <div id="investments-list" class="investments-container">
@@ -54,19 +54,79 @@
         </main>
 
         <nav class="bottom-nav">
-            <a href="#" class="nav-item active">
+            <a href="#" class="nav-item active" onclick="showSection('market-section')">
                 <i class="fas fa-home"></i>
                 <span>الرئيسية</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-chart-line"></i>
-                <span>الأرباح</span>
+            <a href="#" class="nav-item" onclick="showSection('my-farm-section')">
+                <i class="fas fa-wallet"></i>
+                <span>المحفظة</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="#" class="nav-item" onclick="openProfileModal()">
                 <i class="fas fa-user"></i>
                 <span>حسابي</span>
             </a>
         </nav>
+    </div>
+
+    <div id="product-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('product-modal')">&times;</span>
+            <img id="modal-img" src="" class="modal-hero-img">
+            <h2 id="modal-title">اسم الحيوان</h2>
+            <p id="modal-desc" class="modal-description">وصف الحيوان يظهر هنا...</p>
+            
+            <div class="modal-stats">
+                <div class="stat-row">
+                    <span>السعر الأساسي:</span>
+                    <span id="modal-price" class="value">0 $</span>
+                </div>
+                <div class="stat-row">
+                    <span>الربح اليومي:</span>
+                    <span id="modal-daily" class="value">0 $</span>
+                </div>
+                <div class="stat-row">
+                    <span>مدة العقد:</span>
+                    <span id="modal-period" class="value">0 يوم</span>
+                </div>
+                <div class="stat-row highlight">
+                    <span>إجمالي الربح المتوقع:</span>
+                    <span id="modal-total-profit" class="value">0 $</span>
+                </div>
+            </div>
+
+            <div class="quantity-control">
+                <label>عدد الحيوانات (لمضاعفة الربح):</label>
+                <div class="qty-inputs">
+                    <button onclick="updateQuantity(-1)">-</button>
+                    <span id="qty-display">1</span>
+                    <button onclick="updateQuantity(1)">+</button>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div class="final-price">
+                    <small>الإجمالي للدفع:</small>
+                    <span id="modal-final-price">0 $</span>
+                </div>
+                <button id="confirm-buy-btn" class="btn-confirm-buy">تأكيد الشراء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="modal-overlay hidden">
+        <div class="modal-content profile-modal-content">
+            <span class="close-btn" onclick="closeModal('profile-modal')">&times;</span>
+            <img src="https://ui-avatars.com/api/?name=Abu+Amir&background=random&size=128" class="profile-big-img">
+            <h2>أبو أمير</h2>
+            <p>ID: 8829301</p>
+            <hr>
+            <div class="profile-details">
+                <p><strong>نوع الحساب:</strong> مستثمر ذهبي</p>
+                <p><strong>تاريخ الانضمام:</strong> 2024/02/01</p>
+                <p><strong>الحالة:</strong> موثق ✅</p>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
