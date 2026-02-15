@@ -89,6 +89,7 @@ function initApp() {
 
 // 1. رسم السوق (الرئيسية)
 function renderMarket() {
+    if(!marketListEl) return;
     marketListEl.innerHTML = '';
     products.forEach(product => {
         const card = document.createElement('div');
@@ -110,22 +111,24 @@ window.openProductDetails = function(id) {
     currentSelectedProduct = product;
     currentQuantity = 1;
     hasInsurance = false;
-    insuranceToggle.checked = false;
+    if(insuranceToggle) insuranceToggle.checked = false;
 
     // تعبئة البيانات
-    modalImg.src = product.img;
-    modalTitle.textContent = product.name;
-    modalDesc.textContent = product.description;
-    modalPrice.textContent = product.price + ' $';
-    modalPeriod.textContent = product.period + ' يوم';
+    if(modalImg) modalImg.src = product.img;
+    if(modalTitle) modalTitle.textContent = product.name;
+    if(modalDesc) modalDesc.textContent = product.description;
+    if(modalPrice) modalPrice.textContent = product.price + ' $';
+    if(modalPeriod) modalPeriod.textContent = product.period + ' يوم';
 
     updateModalCalculations();
     
-    modalOverlay.classList.remove('hidden');
+    if(modalOverlay) modalOverlay.classList.remove('hidden');
     
-    confirmBuyBtn.onclick = function() {
-        executeBuy();
-    };
+    if(confirmBuyBtn) {
+        confirmBuyBtn.onclick = function() {
+            executeBuy();
+        };
+    }
 };
 
 // 3. التبديل والتأمين والكمية
@@ -137,12 +140,12 @@ window.updateQuantity = function(change) {
 };
 
 window.toggleInsurance = function() {
-    hasInsurance = insuranceToggle.checked;
+    if(insuranceToggle) hasInsurance = insuranceToggle.checked;
     updateModalCalculations();
 };
 
 function updateModalCalculations() {
-    qtyDisplay.textContent = currentQuantity;
+    if(qtyDisplay) qtyDisplay.textContent = currentQuantity;
     
     // الحسابات
     const basePrice = currentSelectedProduct.price * currentQuantity;
@@ -152,9 +155,9 @@ function updateModalCalculations() {
     const totalDaily = currentSelectedProduct.dailyProfit * currentQuantity;
     const totalReturn = totalDaily * currentSelectedProduct.period;
 
-    modalFinalPrice.textContent = totalPrice.toFixed(2) + ' $';
-    modalTotalProfit.textContent = totalReturn.toFixed(2) + ' $';
-    modalDaily.textContent = totalDaily.toFixed(2) + ' $'; 
+    if(modalFinalPrice) modalFinalPrice.textContent = totalPrice.toFixed(2) + ' $';
+    if(modalTotalProfit) modalTotalProfit.textContent = totalReturn.toFixed(2) + ' $';
+    if(modalDaily) modalDaily.textContent = totalDaily.toFixed(2) + ' $'; 
 }
 
 // 4. تنفيذ الشراء
@@ -199,45 +202,47 @@ function executeBuy() {
 
 // 5. إغلاق النوافذ
 window.closeModal = function(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
+    const modal = document.getElementById(modalId);
+    if(modal) modal.classList.add('hidden');
 };
 
-// 6. تحديث الواجهة والمحفظة (مع رسالة الأرباح المتوقعة)
+// 6. تحديث الواجهة والمحفظة
 function updateDashboard() {
-    balanceEl.textContent = userState.balance.toFixed(2) + ' $';
-    activeCountEl.textContent = userState.investments.length + ' حيوان';
+    if(balanceEl) balanceEl.textContent = userState.balance.toFixed(2) + ' $';
+    if(activeCountEl) activeCountEl.textContent = userState.investments.length + ' حيوان';
 
-    investmentsListEl.innerHTML = '';
-    if (userState.investments.length === 0) {
-        investmentsListEl.appendChild(emptyMsgEl);
-    } else {
-        userState.investments.forEach(inv => {
-            const timeLeft = inv.expiryDate - Date.now();
-            const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
-            const isExpired = daysLeft <= 0;
+    if(investmentsListEl) {
+        investmentsListEl.innerHTML = '';
+        if (userState.investments.length === 0) {
+            if(emptyMsgEl) investmentsListEl.appendChild(emptyMsgEl);
+        } else {
+            userState.investments.forEach(inv => {
+                const timeLeft = inv.expiryDate - Date.now();
+                const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+                const isExpired = daysLeft <= 0;
 
-            const div = document.createElement('div');
-            div.className = 'investment-card';
-            div.innerHTML = `
-                <div class="investment-card-header">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <img src="${inv.img}" style="width:55px; height:55px; border-radius:50%; object-fit:cover; border: 2px solid var(--primary-color);">
-                        <div class="inv-info">
-                            <h4>${inv.name} (x${inv.quantity}) ${inv.insured ? '🛡️' : ''}</h4>
-                            <small>متبقي: ${isExpired ? 'منتهي ومتاح للسحب' : daysLeft + ' يوم'}</small>
+                const div = document.createElement('div');
+                div.className = 'investment-card';
+                div.innerHTML = `
+                    <div class="investment-card-header">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <img src="${inv.img}" style="width:55px; height:55px; border-radius:50%; object-fit:cover; border: 2px solid var(--primary-color);">
+                            <div class="inv-info">
+                                <h4>${inv.name} (x${inv.quantity}) ${inv.insured ? '🛡️' : ''}</h4>
+                                <small>متبقي: ${isExpired ? 'منتهي ومتاح للسحب' : daysLeft + ' يوم'}</small>
+                            </div>
                         </div>
+                        <div class="live-profit shadow-3d" id="profit-${inv.id}">0.0000 $</div>
                     </div>
-                    <div class="live-profit shadow-3d" id="profit-${inv.id}">0.0000 $</div>
-                </div>
-                <div class="locked-profit-msg">
-                    ${isExpired ? '✅ تم انتهاء الدورة، الأرباح متاحة للسحب' : `⏳ يمكنك سحب الأرباح المتوقعة (${inv.totalExpectedProfit.toFixed(2)} $) بعد انتهاء الدورة`}
-                </div>
-            `;
-            investmentsListEl.appendChild(div);
-        });
+                    <div class="locked-profit-msg">
+                        ${isExpired ? '✅ تم انتهاء الدورة، الأرباح متاحة للسحب' : `⏳ يمكنك سحب الأرباح المتوقعة (${inv.totalExpectedProfit.toFixed(2)} $) بعد انتهاء الدورة`}
+                    </div>
+                `;
+                investmentsListEl.appendChild(div);
+            });
+        }
     }
     
-    // تحديث حالة زر السحب
     checkWithdrawStatus();
 }
 
@@ -245,7 +250,6 @@ function updateDashboard() {
 function updateLiveProfits() {
     userState.investments.forEach(inv => {
         const now = Date.now();
-        // العداد يعمل حتى انتهاء المدة فقط
         const timeToCalculate = now < inv.expiryDate ? now : inv.expiryDate;
         
         const timeElapsedInSeconds = (timeToCalculate - inv.purchaseTime) / 1000;
@@ -261,84 +265,95 @@ function updateLiveProfits() {
 
 // 8. إعدادات الإيداع والسحب
 function setupWalletButtons() {
-    // الإيداع (العد التنازلي ونقل للتلغرام)
-    document.getElementById('deposit-btn').onclick = function() {
-        const depositModal = document.getElementById('deposit-modal');
-        const countdownEl = document.getElementById('countdown-timer');
-        let counter = 3;
-        
-        depositModal.classList.remove('hidden');
-        countdownEl.textContent = counter;
-        
-        const interval = setInterval(() => {
-            counter--;
-            if (counter > 0) {
+    // استخدمنا querySelector بالكلاس لتجنب أخطاء توقف السكربت إذا لم يجد الـ ID
+    const depositBtn = document.querySelector('.deposit'); 
+    
+    if (depositBtn) {
+        depositBtn.onclick = function() {
+            const depositModal = document.getElementById('deposit-modal');
+            const countdownEl = document.getElementById('countdown-timer');
+            
+            // إذا كانت نافذة الإيداع موجودة
+            if (depositModal && countdownEl) {
+                let counter = 3;
+                depositModal.classList.remove('hidden');
                 countdownEl.textContent = counter;
-            } else {
-                clearInterval(interval);
-                depositModal.classList.add('hidden');
                 
-                // الانتقال للتلغرام
+                const interval = setInterval(() => {
+                    counter--;
+                    if (counter > 0) {
+                        countdownEl.textContent = counter;
+                    } else {
+                        clearInterval(interval);
+                        depositModal.classList.add('hidden');
+                        
+                        const message = encodeURIComponent(`مرحبا اود الايداع\nالايدي الخاص بي: ${USER_ID}`);
+                        window.location.href = `https://t.me/ar_2oa?text=${message}`;
+                    }
+                }, 1000);
+            } else {
+                // في حال عدم وجود النافذة يتم النقل المباشر
                 const message = encodeURIComponent(`مرحبا اود الايداع\nالايدي الخاص بي: ${USER_ID}`);
                 window.location.href = `https://t.me/ar_2oa?text=${message}`;
             }
-        }, 1000);
-    };
-
-    // السحب (مقفل حتى انتهاء أي استثمار)
-    document.getElementById('withdraw-btn').onclick = function() {
-        const hasExpired = userState.investments.some(inv => Date.now() >= inv.expiryDate);
-        if (hasExpired) {
-            alert('تم تقديم طلب السحب بنجاح. سيتم تحويل الأرباح المتوفرة قريباً.');
-            // هنا يتم برمجة السحب الفعلي لاحقاً
-        } else {
-            alert('عذراً، زر السحب مقفل. الأرباح تنزل في محفظتك ولكن يجب انتظار انتهاء دورة استثمارية واحدة على الأقل لتتمكن من سحبها.');
-        }
-    };
+        };
+    }
 }
 
-// فحص قفل زر السحب
+// فحص قفل زر السحب والرسالة
 function checkWithdrawStatus() {
-    const withdrawBtn = document.getElementById('withdraw-btn');
+    const withdrawBtn = document.querySelector('.withdraw');
+    if (!withdrawBtn) return;
+    
     const hasExpired = userState.investments.some(inv => Date.now() >= inv.expiryDate);
     
     if (hasExpired) {
         withdrawBtn.style.background = 'white';
         withdrawBtn.style.color = 'var(--dark-green)';
         withdrawBtn.innerHTML = '<i class="fas fa-arrow-down"></i> سحب متاح';
+        
+        withdrawBtn.onclick = function() {
+            alert('تم تقديم طلب السحب بنجاح. سيتم تحويل الأرباح المتوفرة قريباً.');
+        };
     } else {
         withdrawBtn.style.background = '#ecf0f1';
         withdrawBtn.style.color = '#7f8c8d';
         withdrawBtn.innerHTML = '<i class="fas fa-lock"></i> سحب مقفل';
+        
+        // الرسالة المعدلة للسحب المقفل
+        withdrawBtn.onclick = function() {
+            alert('بعد انتها دوره الحيوان سوف تسحب ارباحك');
+        };
     }
 }
 
 // 9. فتح البروفايل
 window.openProfileModal = function() {
-    document.getElementById('user-id-display').textContent = 'ID: ' + USER_ID;
-    document.getElementById('profile-modal').classList.remove('hidden');
+    const userIdDisplay = document.getElementById('user-id-display');
+    const profileModal = document.getElementById('profile-modal');
+    
+    if(userIdDisplay) userIdDisplay.textContent = 'ID: ' + USER_ID;
+    if(profileModal) profileModal.classList.remove('hidden');
 };
 
-// 10. التنقل بين الأقسام بأسلوب عصري
+// 10. التنقل بين الأقسام
 window.showSection = function(sectionId, element) {
-    // إخفاء كل الأقسام
-    document.getElementById('market-section').style.display = 'none';
-    document.getElementById('my-farm-section').style.display = 'none';
+    const marketSection = document.getElementById('market-section');
+    const myFarmSection = document.getElementById('my-farm-section');
     
-    // إظهار القسم المطلوب
+    if(marketSection) marketSection.style.display = 'none';
+    if(myFarmSection) myFarmSection.style.display = 'none';
+    
     const targetSection = document.getElementById(sectionId);
-    targetSection.style.display = 'block';
+    if(targetSection) targetSection.style.display = 'block';
     
-    // إزالة تفعيل كل الأزرار
     document.querySelectorAll('.bottom-nav .nav-item').forEach(el => {
         el.classList.remove('active');
-        // إزالة تأثير النبض من المركز إذا تم الضغط على غيره
         if(el.classList.contains('center-nav')) {
             el.classList.remove('animate__pulse', 'animate__infinite');
         }
     });
     
-    // تفعيل الزر المضغوط
     if(element) {
         element.classList.add('active');
         if(element.classList.contains('center-nav')) {
@@ -351,5 +366,5 @@ function saveData() {
     localStorage.setItem('smartFarmUser', JSON.stringify(userState));
 }
 
-// تشغيل التطبيق (الافتراضي عرض السوق/الرئيسية في المنتصف)
+// تشغيل التطبيق
 initApp();
