@@ -40,9 +40,14 @@ const products = [
     }
 ];
 
+// معرف المستخدم الافتراضي
+const USER_ID = "8829301";
+
 // متغيرات للنافذة المنبثقة
 let currentSelectedProduct = null;
 let currentQuantity = 1;
+let hasInsurance = false;
+const INSURANCE_PRICE = 2; // دولار لكل حيوان
 
 // حالة المستخدم
 let userState = JSON.parse(localStorage.getItem('smartFarmUser')) || {
@@ -57,7 +62,7 @@ const investmentsListEl = document.getElementById('investments-list');
 const activeCountEl = document.getElementById('active-count');
 const emptyMsgEl = document.getElementById('empty-msg');
 
-// عناصر المودال (التفاصيل)
+// عناصر المودال
 const modalOverlay = document.getElementById('product-modal');
 const modalImg = document.getElementById('modal-img');
 const modalTitle = document.getElementById('modal-title');
@@ -69,6 +74,7 @@ const modalTotalProfit = document.getElementById('modal-total-profit');
 const modalFinalPrice = document.getElementById('modal-final-price');
 const qtyDisplay = document.getElementById('qty-display');
 const confirmBuyBtn = document.getElementById('confirm-buy-btn');
+const insuranceToggle = document.getElementById('insurance-toggle');
 
 // --- الوظائف ---
 
@@ -76,19 +82,23 @@ function initApp() {
     renderMarket();
     updateDashboard();
     setInterval(updateLiveProfits, 100);
+    
+    // إعداد أزرار المحفظة (إيداع / سحب)
+    setupWalletButtons();
 }
 
-// 1. رسم السوق (زر التفاصيل بدلاً من الشراء المباشر)
+// 1. رسم السوق (الرئيسية)
 function renderMarket() {
     marketListEl.innerHTML = '';
     products.forEach(product => {
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
-            <img src="${product.img}" class="product-img" alt="${product.name}">
+            <img src="${product.img}" class="product-img shadow-3d" alt="${product.name}">
             <h3>${product.name}</h3>
             <span class="price-tag">$${product.price}</span>
-            <button onclick="openProductDetails(${product.id})" class="btn-details">التفاصيل</button>
+            <div style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px;">الربح المتوقع: $${product.dailyProfit} يومياً</div>
+            <button onclick="openProductDetails(${product.id})" class="btn-details shadow-3d">التفاصيل</button>
         `;
         marketListEl.appendChild(card);
     });
@@ -98,28 +108,27 @@ function renderMarket() {
 window.openProductDetails = function(id) {
     const product = products.find(p => p.id === id);
     currentSelectedProduct = product;
-    currentQuantity = 1; // إعادة تعيين الكمية
+    currentQuantity = 1;
+    hasInsurance = false;
+    insuranceToggle.checked = false;
 
     // تعبئة البيانات
     modalImg.src = product.img;
     modalTitle.textContent = product.name;
     modalDesc.textContent = product.description;
     modalPrice.textContent = product.price + ' $';
-    modalDaily.textContent = product.dailyProfit + ' $';
     modalPeriod.textContent = product.period + ' يوم';
 
     updateModalCalculations();
     
-    // إظهار المودال
     modalOverlay.classList.remove('hidden');
     
-    // ربط زر الشراء
     confirmBuyBtn.onclick = function() {
         executeBuy();
     };
 };
 
-// 3. تحديث حسابات المودال عند تغيير الكمية
+// 3. التبديل والتأمين والكمية
 window.updateQuantity = function(change) {
     if (currentQuantity + change >= 1) {
         currentQuantity += change;
@@ -127,42 +136,55 @@ window.updateQuantity = function(change) {
     }
 };
 
+window.toggleInsurance = function() {
+    hasInsurance = insuranceToggle.checked;
+    updateModalCalculations();
+};
+
 function updateModalCalculations() {
     qtyDisplay.textContent = currentQuantity;
     
-    // الحسابات بناءً على الكمية
-    const totalPrice = currentSelectedProduct.price * currentQuantity;
+    // الحسابات
+    const basePrice = currentSelectedProduct.price * currentQuantity;
+    const insuranceCost = hasInsurance ? (INSURANCE_PRICE * currentQuantity) : 0;
+    const totalPrice = basePrice + insuranceCost;
+    
     const totalDaily = currentSelectedProduct.dailyProfit * currentQuantity;
     const totalReturn = totalDaily * currentSelectedProduct.period;
 
     modalFinalPrice.textContent = totalPrice.toFixed(2) + ' $';
     modalTotalProfit.textContent = totalReturn.toFixed(2) + ' $';
-    modalDaily.textContent = totalDaily.toFixed(2) + ' $'; // تحديث العرض اليومي أيضاً
+    modalDaily.textContent = totalDaily.toFixed(2) + ' $'; 
 }
 
 // 4. تنفيذ الشراء
 function executeBuy() {
     if (!currentSelectedProduct) return;
 
-    const totalPrice = currentSelectedProduct.price * currentQuantity;
+    const basePrice = currentSelectedProduct.price * currentQuantity;
+    const insuranceCost = hasInsurance ? (INSURANCE_PRICE * currentQuantity) : 0;
+    const totalPrice = basePrice + insuranceCost;
 
     if (userState.balance >= totalPrice) {
         userState.balance -= totalPrice;
         
-        // حساب تاريخ الانتهاء
         const now = Date.now();
         const expiryDate = now + (currentSelectedProduct.period * 24 * 60 * 60 * 1000);
+        
+        const totalDaily = currentSelectedProduct.dailyProfit * currentQuantity;
+        const totalExpectedProfit = totalDaily * currentSelectedProduct.period;
 
-        // إنشاء الاستثمار (مضاعف حسب الكمية)
         const newInvestment = {
             id: Date.now(),
             productId: currentSelectedProduct.id,
             name: currentSelectedProduct.name,
             img: currentSelectedProduct.img,
-            dailyProfit: currentSelectedProduct.dailyProfit * currentQuantity, // الربح مضاعف
+            dailyProfit: totalDaily,
+            totalExpectedProfit: totalExpectedProfit,
             purchaseTime: now,
             expiryDate: expiryDate,
-            quantity: currentQuantity
+            quantity: currentQuantity,
+            insured: hasInsurance
         };
         
         userState.investments.push(newInvestment);
@@ -180,7 +202,7 @@ window.closeModal = function(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 };
 
-// 6. تحديث الواجهة والمحفظة
+// 6. تحديث الواجهة والمحفظة (مع رسالة الأرباح المتوقعة)
 function updateDashboard() {
     balanceEl.textContent = userState.balance.toFixed(2) + ' $';
     activeCountEl.textContent = userState.investments.length + ' حيوان';
@@ -190,63 +212,144 @@ function updateDashboard() {
         investmentsListEl.appendChild(emptyMsgEl);
     } else {
         userState.investments.forEach(inv => {
-            // حساب الأيام المتبقية
             const timeLeft = inv.expiryDate - Date.now();
             const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+            const isExpired = daysLeft <= 0;
 
             const div = document.createElement('div');
             div.className = 'investment-card';
             div.innerHTML = `
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <img src="${inv.img}" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
-                    <div class="inv-info">
-                        <h4>${inv.name} (x${inv.quantity})</h4>
-                        <small>متبقي: ${daysLeft > 0 ? daysLeft + ' يوم' : 'منتهي'}</small>
+                <div class="investment-card-header">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${inv.img}" style="width:55px; height:55px; border-radius:50%; object-fit:cover; border: 2px solid var(--primary-color);">
+                        <div class="inv-info">
+                            <h4>${inv.name} (x${inv.quantity}) ${inv.insured ? '🛡️' : ''}</h4>
+                            <small>متبقي: ${isExpired ? 'منتهي ومتاح للسحب' : daysLeft + ' يوم'}</small>
+                        </div>
                     </div>
+                    <div class="live-profit shadow-3d" id="profit-${inv.id}">0.0000 $</div>
                 </div>
-                <div class="live-profit" id="profit-${inv.id}">0.0000 $</div>
+                <div class="locked-profit-msg">
+                    ${isExpired ? '✅ تم انتهاء الدورة، الأرباح متاحة للسحب' : `⏳ يمكنك سحب الأرباح المتوقعة (${inv.totalExpectedProfit.toFixed(2)} $) بعد انتهاء الدورة`}
+                </div>
             `;
             investmentsListEl.appendChild(div);
         });
     }
+    
+    // تحديث حالة زر السحب
+    checkWithdrawStatus();
 }
 
 // 7. العداد اللحظي
 function updateLiveProfits() {
     userState.investments.forEach(inv => {
         const now = Date.now();
-        if (now < inv.expiryDate) {
-            const timeElapsedInSeconds = (now - inv.purchaseTime) / 1000;
-            const profitPerSecond = inv.dailyProfit / 86400;
-            const currentProfit = timeElapsedInSeconds * profitPerSecond;
-            
-            const profitEl = document.getElementById(`profit-${inv.id}`);
-            if (profitEl) {
-                profitEl.textContent = currentProfit.toFixed(4) + ' $';
-            }
+        // العداد يعمل حتى انتهاء المدة فقط
+        const timeToCalculate = now < inv.expiryDate ? now : inv.expiryDate;
+        
+        const timeElapsedInSeconds = (timeToCalculate - inv.purchaseTime) / 1000;
+        const profitPerSecond = inv.dailyProfit / 86400;
+        const currentProfit = timeElapsedInSeconds * profitPerSecond;
+        
+        const profitEl = document.getElementById(`profit-${inv.id}`);
+        if (profitEl) {
+            profitEl.textContent = currentProfit.toFixed(4) + ' $';
         }
     });
 }
 
-// 8. فتح البروفايل
+// 8. إعدادات الإيداع والسحب
+function setupWalletButtons() {
+    // الإيداع (العد التنازلي ونقل للتلغرام)
+    document.getElementById('deposit-btn').onclick = function() {
+        const depositModal = document.getElementById('deposit-modal');
+        const countdownEl = document.getElementById('countdown-timer');
+        let counter = 3;
+        
+        depositModal.classList.remove('hidden');
+        countdownEl.textContent = counter;
+        
+        const interval = setInterval(() => {
+            counter--;
+            if (counter > 0) {
+                countdownEl.textContent = counter;
+            } else {
+                clearInterval(interval);
+                depositModal.classList.add('hidden');
+                
+                // الانتقال للتلغرام
+                const message = encodeURIComponent(`مرحبا اود الايداع\nالايدي الخاص بي: ${USER_ID}`);
+                window.location.href = `https://t.me/ar_2oa?text=${message}`;
+            }
+        }, 1000);
+    };
+
+    // السحب (مقفل حتى انتهاء أي استثمار)
+    document.getElementById('withdraw-btn').onclick = function() {
+        const hasExpired = userState.investments.some(inv => Date.now() >= inv.expiryDate);
+        if (hasExpired) {
+            alert('تم تقديم طلب السحب بنجاح. سيتم تحويل الأرباح المتوفرة قريباً.');
+            // هنا يتم برمجة السحب الفعلي لاحقاً
+        } else {
+            alert('عذراً، زر السحب مقفل. الأرباح تنزل في محفظتك ولكن يجب انتظار انتهاء دورة استثمارية واحدة على الأقل لتتمكن من سحبها.');
+        }
+    };
+}
+
+// فحص قفل زر السحب
+function checkWithdrawStatus() {
+    const withdrawBtn = document.getElementById('withdraw-btn');
+    const hasExpired = userState.investments.some(inv => Date.now() >= inv.expiryDate);
+    
+    if (hasExpired) {
+        withdrawBtn.style.background = 'white';
+        withdrawBtn.style.color = 'var(--dark-green)';
+        withdrawBtn.innerHTML = '<i class="fas fa-arrow-down"></i> سحب متاح';
+    } else {
+        withdrawBtn.style.background = '#ecf0f1';
+        withdrawBtn.style.color = '#7f8c8d';
+        withdrawBtn.innerHTML = '<i class="fas fa-lock"></i> سحب مقفل';
+    }
+}
+
+// 9. فتح البروفايل
 window.openProfileModal = function() {
+    document.getElementById('user-id-display').textContent = 'ID: ' + USER_ID;
     document.getElementById('profile-modal').classList.remove('hidden');
 };
 
-// 9. التنقل بين الأقسام
-window.showSection = function(sectionId) {
+// 10. التنقل بين الأقسام بأسلوب عصري
+window.showSection = function(sectionId, element) {
     // إخفاء كل الأقسام
     document.getElementById('market-section').style.display = 'none';
     document.getElementById('my-farm-section').style.display = 'none';
     
     // إظهار القسم المطلوب
-    document.getElementById(sectionId).style.display = 'block';
+    const targetSection = document.getElementById(sectionId);
+    targetSection.style.display = 'block';
+    
+    // إزالة تفعيل كل الأزرار
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(el => {
+        el.classList.remove('active');
+        // إزالة تأثير النبض من المركز إذا تم الضغط على غيره
+        if(el.classList.contains('center-nav')) {
+            el.classList.remove('animate__pulse', 'animate__infinite');
+        }
+    });
+    
+    // تفعيل الزر المضغوط
+    if(element) {
+        element.classList.add('active');
+        if(element.classList.contains('center-nav')) {
+            element.classList.add('animate__pulse', 'animate__infinite');
+        }
+    }
 };
 
 function saveData() {
     localStorage.setItem('smartFarmUser', JSON.stringify(userState));
 }
 
-// تشغيل التطبيق (الافتراضي عرض السوق)
+// تشغيل التطبيق (الافتراضي عرض السوق/الرئيسية في المنتصف)
 initApp();
-showSection('market-section');
