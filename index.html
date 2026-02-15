@@ -19,19 +19,31 @@
                     <span class="badge">انقر لعرض البروفايل</span>
                 </div>
             </div>
-            <div class="wallet-card shadow-3d">
-                <p>إجمالي الرصيد</p>
-                <h1 id="total-balance">0.00 $</h1>
-                <div class="wallet-actions">
-                    <button class="btn-action deposit" id="deposit-btn"><i class="fas fa-plus"></i> إيداع</button>
-                    <button class="btn-action withdraw" id="withdraw-btn"><i class="fas fa-lock"></i> سحب</button>
+            
+            <div class="header-balance-pill shadow-3d">
+                <div class="coin-icon">
+                    <i class="fas fa-coins" style="color: #785a16; font-size: 1.1rem;"></i>
                 </div>
+                <span id="compact-balance" class="balance-amount">0</span>
+                <button class="add-btn" onclick="showSection('my-farm-section', document.getElementById('nav-wallet'))">
+                    <i class="fas fa-plus"></i>
+                </button>
             </div>
         </header>
 
         <main class="content">
             
             <section id="my-farm-section" style="display: none;">
+                
+                <div class="wallet-card shadow-3d">
+                    <p>إجمالي الرصيد القابل للسحب</p>
+                    <h1 id="total-balance">0 د.ع</h1>
+                    <div class="wallet-actions">
+                        <button class="btn-action deposit" id="deposit-btn"><i class="fas fa-plus"></i> إيداع</button>
+                        <button class="btn-action withdraw" id="withdraw-btn"><i class="fas fa-lock"></i> سحب</button>
+                    </div>
+                </div>
+
                 <div class="section-title animate__animated animate__fadeIn">
                     <h2><i class="fas fa-wallet"></i> المحفظة (استثماراتي)</h2>
                     <span id="active-count">0 حيوان</span>
@@ -55,7 +67,7 @@
         </main>
 
         <nav class="bottom-nav">
-            <a href="#" class="nav-item" onclick="showSection('my-farm-section', this)">
+            <a href="#" class="nav-item" id="nav-wallet" onclick="showSection('my-farm-section', this)">
                 <i class="fas fa-wallet"></i>
                 <span>المحفظة</span>
             </a>
@@ -82,11 +94,11 @@
             <div class="modal-stats">
                 <div class="stat-row">
                     <span>السعر الأساسي:</span>
-                    <span id="modal-price" class="value">0 $</span>
+                    <span id="modal-price" class="value">0 د.ع</span>
                 </div>
                 <div class="stat-row">
                     <span>الربح المتوقع:</span>
-                    <span id="modal-daily" class="value">0 $</span>
+                    <span id="modal-daily" class="value">0 د.ع</span>
                 </div>
                 <div class="stat-row">
                     <span>مدة العقد:</span>
@@ -94,7 +106,7 @@
                 </div>
                 <div class="stat-row highlight shadow-3d">
                     <span>إجمالي الربح المتوقع:</span>
-                    <span id="modal-total-profit" class="value">0 $</span>
+                    <span id="modal-total-profit" class="value">0 د.ع</span>
                 </div>
             </div>
 
@@ -116,13 +128,13 @@
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <p class="insurance-desc">يضمن لك استرجاع رأس المال في حال حدوث أي طارئ. التكلفة: +2$ للحيوان الواحد.</p>
+                <p class="insurance-desc">يضمن لك استرجاع رأس المال في حال حدوث أي طارئ. التكلفة: +3,000 د.ع للحيوان الواحد.</p>
             </div>
 
             <div class="modal-footer">
                 <div class="final-price">
                     <small>الإجمالي للدفع:</small>
-                    <span id="modal-final-price">0 $</span>
+                    <span id="modal-final-price">0 د.ع</span>
                 </div>
                 <button id="confirm-buy-btn" class="btn-confirm-buy shadow-3d">تأكيد الشراء</button>
             </div>
