@@ -1,13 +1,13 @@
 // --- تهيئة البيانات ---
 
-// قائمة المنتجات مع الصور والوصف
+// تم تعديل الأسعار لتناسب الدينار العراقي (آلاف الدنانير)
 const products = [
     { 
         id: 1, 
         name: 'دجاجة بياضة', 
         img: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=300&q=80', 
-        price: 10, 
-        dailyProfit: 0.5, 
+        price: 15000, 
+        dailyProfit: 750, 
         period: 30,
         description: 'دجاجة بياضة من سلالة ممتازة، تنتج البيض يومياً. استثمار قصير المدى وعائد جيد.'
     },
@@ -15,8 +15,8 @@ const products = [
         id: 2, 
         name: 'خروف عراقي', 
         img: 'https://images.unsplash.com/photo-1484557985045-6f550 ILd687?auto=format&fit=crop&w=300&q=80', 
-        price: 50, 
-        dailyProfit: 2.8, 
+        price: 75000, 
+        dailyProfit: 4200, 
         period: 45,
         description: 'خروف نعيمي أصيل يعيش في مراعي طبيعية. نمو سريع وطلب عالي في السوق.'
     },
@@ -24,8 +24,8 @@ const products = [
         id: 3, 
         name: 'بقرة هولندية', 
         img: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?auto=format&fit=crop&w=300&q=80', 
-        price: 150, 
-        dailyProfit: 9.5, 
+        price: 225000, 
+        dailyProfit: 14250, 
         period: 60,
         description: 'بقرة هولندية حلوب، إنتاجية عالية من الحليب يومياً. تعتبر العمود الفقري للمزرعة.'
     },
@@ -33,30 +33,37 @@ const products = [
         id: 4, 
         name: 'حصان عربي', 
         img: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=300&q=80', 
-        price: 500, 
-        dailyProfit: 35.0, 
+        price: 750000, 
+        dailyProfit: 52500, 
         period: 90,
         description: 'حصان عربي أصيل للسباقات والإنتاج. أعلى عائد استثماري ومكانة مرموقة.'
     }
 ];
 
-// معرف المستخدم الافتراضي
 const USER_ID = "8829301";
-
-// متغيرات للنافذة المنبثقة
 let currentSelectedProduct = null;
 let currentQuantity = 1;
 let hasInsurance = false;
-const INSURANCE_PRICE = 2; // دولار لكل حيوان
+const INSURANCE_PRICE = 3000; // تأمين بالدينار العراقي
 
-// حالة المستخدم
-let userState = JSON.parse(localStorage.getItem('smartFarmUser')) || {
-    balance: 100.00,
+// حفظ جديد ليتعرف على الأرقام الكبيرة
+let userState = JSON.parse(localStorage.getItem('smartFarmUserV2')) || {
+    balance: 150000, // رصيد افتراضي للتجربة بالدينار
     investments: []
 };
 
+// --- دوال مساعدة لترتيب الأرقام (الآلاف والدينار) ---
+function formatMoney(amount) {
+    return Math.floor(amount).toLocaleString('en-US') + ' د.ع';
+}
+
+function formatNumberOnly(amount) {
+    return Math.floor(amount).toLocaleString('en-US');
+}
+
 // --- العناصر ---
-const balanceEl = document.getElementById('total-balance');
+const compactBalanceEl = document.getElementById('compact-balance'); // الرصيد المصغر
+const balanceEl = document.getElementById('total-balance'); // رصيد المحفظة الكلي
 const marketListEl = document.getElementById('market-list');
 const investmentsListEl = document.getElementById('investments-list');
 const activeCountEl = document.getElementById('active-count');
@@ -82,12 +89,10 @@ function initApp() {
     renderMarket();
     updateDashboard();
     setInterval(updateLiveProfits, 100);
-    
-    // إعداد أزرار المحفظة (إيداع / سحب)
     setupWalletButtons();
 }
 
-// 1. رسم السوق (الرئيسية)
+// 1. رسم السوق (الرئيسية) - تم إزالة الربح المتوقع من هنا
 function renderMarket() {
     if(!marketListEl) return;
     marketListEl.innerHTML = '';
@@ -97,15 +102,14 @@ function renderMarket() {
         card.innerHTML = `
             <img src="${product.img}" class="product-img shadow-3d" alt="${product.name}">
             <h3>${product.name}</h3>
-            <span class="price-tag">$${product.price}</span>
-            <div style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px;">الربح المتوقع: $${product.dailyProfit} يومياً</div>
+            <span class="price-tag">${formatMoney(product.price)}</span>
             <button onclick="openProductDetails(${product.id})" class="btn-details shadow-3d">التفاصيل</button>
         `;
         marketListEl.appendChild(card);
     });
 }
 
-// 2. فتح نافذة التفاصيل
+// 2. فتح نافذة التفاصيل (الربح يظهر هنا فقط)
 window.openProductDetails = function(id) {
     const product = products.find(p => p.id === id);
     currentSelectedProduct = product;
@@ -113,11 +117,10 @@ window.openProductDetails = function(id) {
     hasInsurance = false;
     if(insuranceToggle) insuranceToggle.checked = false;
 
-    // تعبئة البيانات
     if(modalImg) modalImg.src = product.img;
     if(modalTitle) modalTitle.textContent = product.name;
     if(modalDesc) modalDesc.textContent = product.description;
-    if(modalPrice) modalPrice.textContent = product.price + ' $';
+    if(modalPrice) modalPrice.textContent = formatMoney(product.price);
     if(modalPeriod) modalPeriod.textContent = product.period + ' يوم';
 
     updateModalCalculations();
@@ -147,7 +150,6 @@ window.toggleInsurance = function() {
 function updateModalCalculations() {
     if(qtyDisplay) qtyDisplay.textContent = currentQuantity;
     
-    // الحسابات
     const basePrice = currentSelectedProduct.price * currentQuantity;
     const insuranceCost = hasInsurance ? (INSURANCE_PRICE * currentQuantity) : 0;
     const totalPrice = basePrice + insuranceCost;
@@ -155,9 +157,9 @@ function updateModalCalculations() {
     const totalDaily = currentSelectedProduct.dailyProfit * currentQuantity;
     const totalReturn = totalDaily * currentSelectedProduct.period;
 
-    if(modalFinalPrice) modalFinalPrice.textContent = totalPrice.toFixed(2) + ' $';
-    if(modalTotalProfit) modalTotalProfit.textContent = totalReturn.toFixed(2) + ' $';
-    if(modalDaily) modalDaily.textContent = totalDaily.toFixed(2) + ' $'; 
+    if(modalFinalPrice) modalFinalPrice.textContent = formatMoney(totalPrice);
+    if(modalTotalProfit) modalTotalProfit.textContent = formatMoney(totalReturn);
+    if(modalDaily) modalDaily.textContent = formatMoney(totalDaily); 
 }
 
 // 4. تنفيذ الشراء
@@ -206,9 +208,10 @@ window.closeModal = function(modalId) {
     if(modal) modal.classList.add('hidden');
 };
 
-// 6. تحديث الواجهة والمحفظة
+// 6. تحديث الواجهة (تمت إضافة تنسيق فواصل الآلاف والدينار)
 function updateDashboard() {
-    if(balanceEl) balanceEl.textContent = userState.balance.toFixed(2) + ' $';
+    if(compactBalanceEl) compactBalanceEl.textContent = formatNumberOnly(userState.balance);
+    if(balanceEl) balanceEl.textContent = formatMoney(userState.balance);
     if(activeCountEl) activeCountEl.textContent = userState.investments.length + ' حيوان';
 
     if(investmentsListEl) {
@@ -232,10 +235,10 @@ function updateDashboard() {
                                 <small>متبقي: ${isExpired ? 'منتهي ومتاح للسحب' : daysLeft + ' يوم'}</small>
                             </div>
                         </div>
-                        <div class="live-profit shadow-3d" id="profit-${inv.id}">0.0000 $</div>
+                        <div class="live-profit shadow-3d" id="profit-${inv.id}">0.00 د.ع</div>
                     </div>
                     <div class="locked-profit-msg">
-                        ${isExpired ? '✅ تم انتهاء الدورة، الأرباح متاحة للسحب' : `⏳ يمكنك سحب الأرباح المتوقعة (${inv.totalExpectedProfit.toFixed(2)} $) بعد انتهاء الدورة`}
+                        ${isExpired ? '✅ تم انتهاء الدورة، الأرباح متاحة للسحب' : `⏳ يمكنك سحب الأرباح المتوقعة (${formatMoney(inv.totalExpectedProfit)}) بعد انتهاء الدورة`}
                     </div>
                 `;
                 investmentsListEl.appendChild(div);
@@ -246,7 +249,7 @@ function updateDashboard() {
     checkWithdrawStatus();
 }
 
-// 7. العداد اللحظي
+// 7. العداد اللحظي (تم تقليل الكسور لعرض منطقي للدينار العراقي)
 function updateLiveProfits() {
     userState.investments.forEach(inv => {
         const now = Date.now();
@@ -258,14 +261,14 @@ function updateLiveProfits() {
         
         const profitEl = document.getElementById(`profit-${inv.id}`);
         if (profitEl) {
-            profitEl.textContent = currentProfit.toFixed(4) + ' $';
+            // إضافة كسرين لضمان استمرار حركة العداد مع الدينار
+            profitEl.textContent = currentProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' د.ع';
         }
     });
 }
 
 // 8. إعدادات الإيداع والسحب
 function setupWalletButtons() {
-    // استخدمنا querySelector بالكلاس لتجنب أخطاء توقف السكربت إذا لم يجد الـ ID
     const depositBtn = document.querySelector('.deposit'); 
     
     if (depositBtn) {
@@ -273,7 +276,6 @@ function setupWalletButtons() {
             const depositModal = document.getElementById('deposit-modal');
             const countdownEl = document.getElementById('countdown-timer');
             
-            // إذا كانت نافذة الإيداع موجودة
             if (depositModal && countdownEl) {
                 let counter = 3;
                 depositModal.classList.remove('hidden');
@@ -292,7 +294,6 @@ function setupWalletButtons() {
                     }
                 }, 1000);
             } else {
-                // في حال عدم وجود النافذة يتم النقل المباشر
                 const message = encodeURIComponent(`مرحبا اود الايداع\nالايدي الخاص بي: ${USER_ID}`);
                 window.location.href = `https://t.me/ar_2oa?text=${message}`;
             }
@@ -300,7 +301,6 @@ function setupWalletButtons() {
     }
 }
 
-// فحص قفل زر السحب والرسالة
 function checkWithdrawStatus() {
     const withdrawBtn = document.querySelector('.withdraw');
     if (!withdrawBtn) return;
@@ -320,7 +320,6 @@ function checkWithdrawStatus() {
         withdrawBtn.style.color = '#7f8c8d';
         withdrawBtn.innerHTML = '<i class="fas fa-lock"></i> سحب مقفل';
         
-        // الرسالة المعدلة للسحب المقفل
         withdrawBtn.onclick = function() {
             alert('بعد انتها دوره الحيوان سوف تسحب ارباحك');
         };
@@ -363,7 +362,7 @@ window.showSection = function(sectionId, element) {
 };
 
 function saveData() {
-    localStorage.setItem('smartFarmUser', JSON.stringify(userState));
+    localStorage.setItem('smartFarmUserV2', JSON.stringify(userState));
 }
 
 // تشغيل التطبيق
